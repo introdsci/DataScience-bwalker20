@@ -1,6 +1,6 @@
 ---
-title: " " #replace the title with something short and catchy to represent your project
-subtitle: "____'s Data Science Portfolio" #replace blank with your name
+title: "Airbnb Data Examination" #replace the title with something short and catchy to represent your project
+subtitle: "Brandon Walker's Data Science Portfolio" #replace blank with your name
 output:
   html_document:
     df_print: paged
@@ -8,11 +8,11 @@ output:
 
 ## Abstract
 
-In under 250 words give a brief summary of the project so far.
+In this project, we will observe the dataset from Airbnb which contains data about around 48k listings in New York.
 
 ### 1. Discovery and Data Preparation
-
-Provide a one-sentence introduction with what is covered by the first deliverable along with a link to another html page that gives the details.
+In this stage of the project, we cover the introduction of the dataset, all the variables in the data set, cleaning the data, and creating visualizations of the data.
+https://introdsci.github.io/DataScience-bwalker20/Discovery_DataPrep.html
 
 ### 2. Model Planning and Building
 

@@ -1,0 +1,146 @@
+---
+title: "Discovery and Data Prep of AirBnB listings in NY"
+author: "Brandon Walker"
+date: "October 8, 2019"
+output:
+  html_document:
+    df_print: paged
+---
+
+## Introduction
+
+My motivation for choosing the topic of economics and how it relates to
+Airbnb was to see how different Neighborhoods affected the price and rating
+of different listings.
+
+## Identification of Data Set
+
+First we need to load the tidyverse library, I suppress the messages and warnings so they wont be included in the knitted rmd file.
+```{r}
+suppressMessages(suppressWarnings(library(tidyverse)))
+```
+
+Now we have to load the Airbnb dataset that I have downloaded in the current working directory
+```{r}
+setwd("../Portfolio_Project/")
+airbnb <- read.csv("./AB_NYC_2019.csv")
+```
+
+## Description of Source
+
+The Dataset can be found at: https://www.kaggle.com/dgomonov/new-york-city-airbnb-open-data
+
+The Source has been taken from a public dataset that is part of Airbnb, and they have posted the data from the New York area.
+
+This seems to be a trustworthy source, however there may be information left out. I am not sure if this is all the data from New York or if this is just what they have taken. This could be a limitation because I am not really sure how the data was gathered from Airbnb, and if some variables have been left out.
+
+## Variable Documentation
+
+First, lets look at the column names and how each variable has been stored.
+```{r}
+colnames(airbnb)
+for(i in 1:16) {
+  print(typeof(airbnb[1,i]))
+}
+```
+
+--id: The id of the listing, all values are unique. Variable stored as integer  
+--name: The name of the listing. Variable stored as integer  
+--host_id: The id of the host, all values are unique. Variable stored as integer  
+--host_name: The name of the host. Variable stored as integer  
+--neighbourhood_group: The general location of the neighbourhood, Categorical Variable. Variable stored as integer  
+--neighbourhood: Name of the neighbourhood, Categorical Variable. Varaible stored as integer  
+--latitude: The latitude coordinate of the listing. Variable stored as double  
+--longitude: The longitude coordinate of the listing. Variable stored as double  
+--room_type: The type of room/space of the listing, Categorical Variable. Variable stored as interger  
+--price: The price per night of the listing in dollars. Variable stored as integer.  
+--minimum_nights: The minimum nights allowed for the listing. Variable stored as integer  
+--number_of_reviews: The number of reviews for the listing. Variable stored as integer  
+--last_review: The date of the last review, format being yyyy-mm-dd. Variable stored as integer  
+--reviews_per_month: The average number of reviews per month. Variable stored as double  
+--calculated_host_listings_count: The amount of listings by the host. Variable stored as integer  
+--availability_365: The number of days when the listing is available for booking. Variable stored as integer  
+
+## Clean Data
+
+Now firstly to clean the data, I am changing the values of each variable to what they should be. For example the character variables have been saved as integers.
+```{r}
+airbnb$name <- as.character(airbnb$name)
+airbnb$host_name <- as.character(airbnb$host_name)
+airbnb$neighbourhood <- as.character(airbnb$neighbourhood)
+airbnb$neighbourhood_group <- as.character(airbnb$neighbourhood_group)
+airbnb$room_type <- as.character(airbnb$room_type)
+airbnb$last_review <- as.Date(airbnb$last_review)
+
+```
+
+Now I am going to change the categorical variables to be treated as factors.
+```{r}
+airbnb$neighbourhood_group <- as.factor(airbnb$neighbourhood_group)
+airbnb$neighbourhood <- as.factor(airbnb$neighbourhood)
+airbnb$room_type <- as.factor(airbnb$room_type)
+
+```
+
+Just to check and make sure it all worked
+```{r}
+for(i in 1:16) {
+  print(typeof(airbnb[1,i]))
+}
+head(levels(airbnb$neighbourhood))
+levels(airbnb$neighbourhood_group)
+levels(airbnb$room_type)
+```
+
+I am going to now split this one large table into two smaller tables. One table will be related to the host, and the other table will be related to the listing. Both tables will include the listing id so we can use that to link them.
+
+```{r}
+Hosts <- tibble(listing_id = airbnb$id, host_id = airbnb$host_id, host_name = airbnb$host_name, number_of_listings = airbnb$calculated_host_listings_count)
+
+Listings <- tibble(listing_id = airbnb$id, name = airbnb$name, neighborhood = airbnb$neighbourhood, neighborhood_group = airbnb$neighbourhood_group, latitude = airbnb$latitude, longitude = airbnb$longitude, room_type = airbnb$room_type, price = airbnb$price, minimum_nights = airbnb$minimum_nights, number_of_reviews = airbnb$number_of_reviews, last_review = airbnb$last_review, reviews_per_month = airbnb$reviews_per_month, availability = airbnb$availability_365)
+
+Listings <- Listings[order(Listings$listing_id),]
+Hosts <- Hosts[order(Hosts$listing_id),]
+```
+
+The data is now clean.
+
+## Visualization
+
+Now since the data has been cleaned, we can start to visualize it using graphs and summaries.
+
+I am going to graph how many hosts have a certain number of listings using a bar graph.
+```{r}
+ggplot(Hosts, aes(number_of_listings)) + geom_bar() + scale_x_continuous(breaks = seq(0, max(Hosts$number_of_listings), 25))
+```
+
+As we can see, the majority of hosts own around 1 to 25 listings. However there are some hosts that have a lot of listings, one at around 225, and another at around 325.
+
+I am now going to plot how many listings are in each neighborhood group.
+```{r}
+ggplot(Listings, aes(neighborhood_group)) + geom_bar()
+```
+
+We can see that Brooklyn and Manhattan have the majority of the listings.
+
+I am also going to check how many listings there are based on room type.
+```{r}
+ggplot(Listings, aes(room_type)) + geom_bar()
+```
+
+Here we can see that Entire home/apt and Private room are the most common listing. 
+
+Now I am going to plot the average price of listings based on what neighborhood group they are in.
+```{r}
+ggplot(Listings, aes(neighborhood_group, price)) + stat_summary(fun.y = "mean", geom = "bar")
+```
+
+We can see that the average price for Manhattan is much more expensive than any other neighborhood. On the other end, we can see that the Bronx is the cheapest on average, but not by a lot.
+
+## Research Questions
+
+Some Research Questions that I have about this topic:
+
+--What factors lead to having a positive review, such as pricing and location?  
+--Can we determine if hosts with mulitple listings tend to buy in a similar area?  
+--How do hosts determine what price they put their listing at?  
