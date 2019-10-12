@@ -22,7 +22,7 @@ suppressMessages(suppressWarnings(library(tidyverse)))
 
 Now we have to load the Airbnb dataset that I have downloaded in the current working directory
 ```{r}
-setwd("../Portfolio_Project/")
+setwd("./")
 airbnb <- read.csv("./AB_NYC_2019.csv")
 ```
 
