@@ -16,7 +16,11 @@ https://introdsci.github.io/DataScience-bwalker20/Discovery_DataPrep.html
 
 ### 2. Model Planning and Building
 
-Coming soon...
+In this stage of the project, we are going to import and clean a second dataset that contains data of peoples salaries in NYC.
+After Cleaning the new dataset, we will visualize it to get a general idea of the data.
+After Visualization we will build a model for the airbnb dataset and try to see how well we can predict the price of an airbnb.
+Next we will build a model for the NYC Salaries dataset and see how well we can predict a persons average gross pay in 2017.
+https://introdsci.github.io/DataScience-bwalker20/Second_Source_and_Modeling.html
 
 ### 3. Results and Operationalization
 

@@ -1,0 +1,150 @@
+---
+title: "Second Source and Modeling"
+author: "Brandon Walker"
+date: "November 20, 2019"
+output: html_document
+---
+
+Firstly, we want to load everything we have done in the previous part.
+```{r}
+suppressMessages(suppressWarnings(library(tidyverse)))
+suppressMessages(suppressWarnings(library(knitr)))
+suppressMessages(suppressWarnings(library(caret)))
+purl("Discovery_DataPrep.Rmd", output = "part1.r")
+capture.output(source("part1.r"), file='NUL')
+```
+
+## Second Datasource Introduction
+
+Now since we have our previous data loaded, we can import a new dataset using an API. For this data source I am looking at salaries in the NYC area. I am using an API to limit the data I am recieving. Since It will only allow me to get 1000 rows in each call, I am going to use 4 different calls on 4 different base salary groups. The data will all be from the fiscal year 2017. This data source has a location, similar to the neighborhood_group in the airbnb dataset, for where they work so we can see if there is any relations with the price of airbnbs and where people make the most money.
+```{r}
+read1 <- read.csv("https://data.cityofnewyork.us/resource/k397-673e.csv?fiscal_year=2017&$where=base_salary>200000&$order=base_salary")
+read2 <- read.csv("https://data.cityofnewyork.us/resource/k397-673e.csv?fiscal_year=2017&$where=base_salary>150000&$order=base_salary")
+read3 <- read.csv("https://data.cityofnewyork.us/resource/k397-673e.csv?fiscal_year=2017&$where=base_salary>100000&$order=base_salary")
+read4 <- read.csv("https://data.cityofnewyork.us/resource/k397-673e.csv?fiscal_year=2017&$where=base_salary>50000&$order=base_salary")
+
+
+NYC_Salaries <- rbind(read1, read2, read3, read4)
+```
+
+```{r}
+summary(NYC_Salaries)
+colnames(NYC_Salaries)
+```
+
+## Cleaning
+
+As we can see from summary, the column payroll_number is all N/A's so we can just remove that whole column. We can also see that middle initial has a lot of missing data, so I am also going to remove that column.
+```{r}
+NYC_Salaries <- NYC_Salaries[, !(names(NYC_Salaries) %in% c("payroll_number", "mid_init"))]
+```
+
+The agency_start_time column can be reduced down to just the date, since the time is always the same. I am going to parse the date and only keep that and get rid of the time.
+```{r}
+NYC_Salaries$agency_start_date <- parse_date(as.character(NYC_Salaries$agency_start_date), format = "%Y-%m-%dT00:00:00.000")
+```
+
+For this table I think its better to keep as one large table rather than splitting it up, because if we were to split it up, one table would only have agency name and the other table would have everything else.
+
+I am going to change a couple of the column names since they are pretty long and can be shortend.
+```{r}
+colnames(NYC_Salaries)[colnames(NYC_Salaries) == "work_location_borough"] <- "work_location"
+colnames(NYC_Salaries)[colnames(NYC_Salaries) == "leave_status_as_of_july_31"] <- "leave_status"
+colnames(NYC_Salaries)[colnames(NYC_Salaries) == "agency_start_date"] <- "start_date"
+```
+
+## Visualization
+
+Now we can visualize some of this data before we get into modeling.
+```{r}
+ggplot(NYC_Salaries, aes(work_location)) + geom_bar()
+```
+
+As we can see, the majority of the work locations are in Manhattan.
+
+```{r}
+ggplot(NYC_Salaries, aes(work_location, regular_gross_paid)) + stat_summary(fun.y = "mean", geom = "bar") + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+Based on our data we can see that Sullivan has the highest average regular gross paid, while Manhattan and Other are the other two highest. In contrast we can see that the Bronx and Richmond have the lowest average. This is interesting because in our last project, we could see that the Bronx has the lowest average priced airbnb's.
+
+## Modeling Airbnb Dataset
+
+Now we can start Modeling:
+
+First we are going to model data for the airbnb dataset, then we will model the nyc salaries dataset.
+
+For my airbnb model I am going to try to find what are good predictors of an airbnb's price. Since the airbnb data has some NA's in important columns, we are going to use na.omit to remove the data with NA's. We also have to convert our categorical variables to integers instead of being treated as a factor.
+
+```{r}
+airbnb <- na.omit(airbnb)
+airbnb$neighbourhood <- as.integer(airbnb$neighbourhood)
+airbnb$neighbourhood_group <- as.integer(airbnb$neighbourhood_group)
+airbnb$room_type <- as.integer(airbnb$room_type)
+```
+
+We are now going to split the data into training and testing data. 80% of the data will be used to train the model then the test will be used to validate our model. 
+```{r}
+index <- createDataPartition(airbnb$price, p=.80, list = F)
+train = airbnb[index,]
+test = airbnb[-index,]
+
+train_airbnb <- lm(data = train, price ~ neighbourhood_group + neighbourhood + latitude + longitude + room_type + minimum_nights + number_of_reviews + reviews_per_month + availability_365)
+
+summary(train_airbnb)
+plot(train_airbnb)
+```
+
+As we can see from the summary, everything except reviews per month are good predictors for the price of an airbnb in NYC. This makes sense because the first 4 are based on location, so if an area is more expensive to live in, then the price should be more expensive. Room type also makes sense because a whole apartment is going to cost more than a shared room. Minimum nights was not as good of a predictor and it makes sense because the minimum number of nights doesn't seem like it should have an affect on the price. Number of reviews makes sense becuase a place with more reviews will probably be less expensive because more people can stay there. Availability is somewhat of a suprise to me because I wouldnt expect the availability to have an affect on the price.
+
+Now we can validate our data on the test set.
+```{r}
+prediction <- train_airbnb %>% predict(test)
+R2(prediction, test$price)
+MAE(prediction, test$price)
+ggplot(test, aes(prediction, price)) + geom_point()
+```
+```{r}
+mean(test$price)
+```
+Our R2 value was pretty low, which means it wasnt able to fit the data very well.
+
+As we can see, our MAE value is pretty large, which means our model is having some error guessing the price of our test data's prices by an average of about 59. However when looking at the graph there are some very large outliers that may be contributing to this error a lot.
+
+## Modeling NYC Salaries Dataset
+
+Now we are going to build a model for our NYC salaries dataset.
+We are going through the same steps so I will just label them rather than going into detail. We are going to try to predict the regular_gross_paid based on the variables. The only predictor I will use that is based on money is base_salary, otherwise it will just add up to get the gross_paid.
+
+Fixing data types:
+```{r}
+NYC_Salaries$agency_name <- as.integer(NYC_Salaries$agency_name)
+NYC_Salaries$work_location <- as.integer(NYC_Salaries$work_location)
+NYC_Salaries$title_description <- as.integer(NYC_Salaries$title_description)
+```
+
+Splitting data and creating model:
+```{r}
+index <- createDataPartition(NYC_Salaries$regular_gross_paid, p=.80, list = F)
+train = NYC_Salaries[index,]
+test = NYC_Salaries[-index,]
+
+train_nyc <- lm(data = train, regular_gross_paid ~ agency_name + start_date + work_location + title_description + base_salary + regular_hours)
+
+summary(train_nyc)
+plot(train_nyc)
+```
+
+As we can see from this summary, everything but work location are strong predictors. This seems interesting to me because I thought work location would be one of the strongest predictors. However this could be an error since so much data is from Manhatten, that there isnt enough difference for it to train on. As for agency name, this makes sense because some agency's will pay more than others. Start date also makes sense because if you start later in the year then you will make less. Title description makes sense becasue pay is going to depend on your job and a software engineer is going to get paid more than a janitor. Base salary makes sense because if your base salary is more than your gross amount is going to be higher. Regular hours also makes sense because if you work more, then you are going to get paid more.
+
+Validating data:
+```{r}
+prediction <- train_nyc %>% predict(test)
+R2(prediction, test$regular_gross_paid)
+MAE(prediction, test$regular_gross_paid)
+ggplot(test, aes(prediction, regular_gross_paid)) + geom_point()
+```
+
+Our R2 value is about .80, which means that it was able to fit the data fairly well.
+
+As we can see, our MAE value is about 15,600. This value is actually not too bad because of the difference in salaries that we have. Since our base salaries have been split into 4 groups with 50,000 in difference. An error of about 15,000 is not too significant. I think if the data was more continous and spread about, it wouldn't be too bad.
