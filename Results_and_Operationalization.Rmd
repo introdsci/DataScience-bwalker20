@@ -1,0 +1,52 @@
+---
+title: "Results and Operationalization"
+author: "Brandon Walker"
+date: "December 15, 2019"
+output: html_document
+---
+```{r load, results='hide', message=FALSE, include=FALSE}
+#Loading the data will not be included in the knitted output
+suppressMessages(suppressWarnings(library(tidyverse)))
+suppressMessages(suppressWarnings(library(knitr)))
+suppressMessages(suppressWarnings(library(caret)))
+source("part1.r")
+source("part2.r")
+```
+
+## Review and Modifications of Previous Phases
+
+For the first phase, I changed a code block where I was using a for loop to print out the types of variables in the data set, now I am using str() to do that. I also changed some of my research questions to better fit the topic I am interested in. I also changed the scaling of a plot for better visualization. I also realized that in the Hosts table, we do not need to include the listing id, this just creates duplicate rows with a different listing id. It would save space to just link the tables using host id, and then just have one row for each host.
+
+For phase two, I changed a code block in my model where instead of converting my data to integers then using it in the model, I just change the type to integer in the model. This way if I use the data after, all the values will show as a string rather than an integer. Because for a variable like title_description, you want to read it as a string.
+
+I think that it would have been really nice for Airbnb data to have included the number of bedrooms, bathrooms, and the sq ft of the listings. This would have made the model a lot more accurate I think because these factors typically have a large affect on house prices. 
+
+Another data source I think would have been nice to have is the cost of houses, and being able to link the airbnb by address to find how much the property actually costs. This would be a large factor that could contribute to the cost of an Airbnb. This somewhat goes along the same idea as adding sq ft or amount of bedrooms, It allows us to separate these listings where some have similar variables yet far different prices.
+
+## Showing all tables
+
+```{r}
+head(Hosts)
+head(Listings)
+head(NYC_Salaries)
+```
+
+## Cross-Validation
+
+I completed cross-validation in phase 2 of the project. 
+
+The results for my Airbnb model were alright. It had and MAE of 59 when the average price of an airbnb was 146. I think one problem is that there are some Airbnb's with extremely high prices that might make the model less accurate. Like I was saying before if the Airbnb data set had included sq footage or some way to quantify the size of the listing, then I think this would help with the models accuracy. As for my research question, "How do hosts determine what price they put their listing at?", based on my model we can determine that location is the greatest factor in what a host sets their price at. I think the other variables tend to be results and not factors, for example a more expensive airbnb probably has better amenities, and so the reviews will tend to be higher. We can also determine that my second research question, "Does location have a large impact on the price of a listing?", is true. We can determine that location plays the largest impact on price of a listing.
+
+The results for my NYC Salaries was better than the Airbnb model. It had an MAE of 15,600 which is actually not that bad when you consider that the data was grabbed with 4 different base salary groups each with a difference of about $50,000. If the data had been easier to retrieve allowing me to have a more continuous spread, I think that the model would be a lot more accurate. As for my research question, "Do companies pay higher wages where Airbnb listings tend to be more expensive?", we can conclude that this is not true. Based on my model it determines that work location is not a significant factor in how much a company pays.
+
+## Operationalization
+
+To Operationalize my Airbnb model, I think the best way to use it would be to try to have an application that would determine what an Airbnb should be priced, this way someone could tell if they were being ripped off or not. This would be similar to Zillow where it has the price of a house, and then also has an estimate for how much the house should be priced at.
+
+To Operationalize my NYC_Salaries model, I think people could use it to determine how much people make based on their status. For example if someone was wondering how much a software engineer that works at Dept of Health/Mental Hygiene in Manhattan makes. This could work similar to Glassdoor where they show you the estimated salary range for given jobs. However, Glassdoor uses peoples input to guess the salary range so you never know how accurate the given range is.
+
+## Implications
+
+One impact that I think can happen from my Airbnb Operationalization is that people can constantly keep trying to undercut the estimates of the price. A problem like this could just continue to compound because as the prices go down, the estimates also go down.This would probably somewhat cause a lot of people to stop listing their property on Airbnb because people would want to pay a lot less than what they are capable of listing their Airbnb for.
+
+One impact that I can think can happen from the NYC salaries operationalization is that there will constantly be people having an expectation that this is what they should be getting paid. The problem is that my model doesn't take years of experience as a variable, so new graduates will expect to make the same amount as the average salary. Companies could also try to use it to pay people less, claiming that this is the average that this role pays and try to pay senior roles less than usual.
